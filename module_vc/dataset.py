@@ -1,29 +1,52 @@
-from pathlib import Path
+from tensorflow import keras
 
-from loguru import logger
-from tqdm import tqdm
-import typer
+CLASS_NAMES= [
+    "avião",
+    "automóvel",
+    "pássaro",
+    "gato",
+    "cervo",
+    "cachorro",
+    "sapo",
+    "cavalo",
+    "navio",
+    "caminhão",
+]
 
-from module_vc.config import PROCESSED_DATA_DIR, RAW_DATA_DIR
+def load_cifar10():
+    """Carrega CIFAR-10, normaliza as imagens e achata os rótulos.
 
-app = typer.Typer()
+    Returns:
+        Tupla (X_train, y_train, X_test, y_test), com imagens float32
+        no intervalo [0, 1] e rótulos inteiros unidimensionais.
+    """
+    (X_train, y_train), (X_test, y_test)= keras.datasets.cifar10.load_data()
 
+    X_train=    X_train.astype("float32")/ 255.0
+    X_test=     X_test.astype("float32")/ 255.0
+    y_train=    y_train.flatten()
+    y_test=     y_test.flatten()
 
-@app.command()
-def main(
-    # ---- REPLACE DEFAULT PATHS AS APPROPRIATE ----
-    input_path: Path = RAW_DATA_DIR / "dataset.csv",
-    output_path: Path = PROCESSED_DATA_DIR / "dataset.csv",
-    # ----------------------------------------------
-):
-    # ---- REPLACE THIS WITH YOUR OWN CODE ----
-    logger.info("Processing dataset...")
-    for i in tqdm(range(10), total=10):
-        if i == 5:
-            logger.info("Something happened for iteration 5.")
-    logger.success("Processing dataset complete.")
-    # -----------------------------------------
+    return X_train, y_train, X_test, y_test
 
+def plot_sample_images(images, labels, output_path=None, count=9):
+    """Exibe uma grade de imagens e, opcionalmente, salva a figura."""
+    import matplotlib.pyplot as plt
 
-if __name__ == "__main__":
-    app()
+    count= min(count, len(images))
+    figure, axes= plt.subplots(3, 3, figsize=(10, 10))
+
+    for index, axis in enumerate(axes.flat):
+        if index>= count:
+            axis.axis("off")
+            continue
+        axis.imshow(images[index])
+        axis.set_title(CLASS_NAMES[int(labels[index])])
+        axis.axis("off")
+
+    figure.suptitle("Exemplos da base CIFAR-10", fontsize=16)
+    figure.tight_layout()
+
+    if output_path is not None:
+        figure.savefig(output_path, dpi=150, bbox_inches="tight")
+    plt.close(figure)
